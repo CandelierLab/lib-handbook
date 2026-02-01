@@ -1,14 +1,18 @@
-# lib-anim
+# lib-handbook
 
-A python toolbox for creating animations.
+A python toolbox for creating documentations.
 
-## Installation
+## Installation (for users)
 
 ```
 pip install --upgrade pip
-pip install lib-anim
+pip install lib-handbook
 ```
+
+## Installation (for developpers)
+
+TO DO
 
 ## Dependencies
 
-Depends on `numpy`, `matplotlib`, `pyqt6`, `pyqt6-3d` and `imageio[ffmpeg]`
+Depends on `numpy`.

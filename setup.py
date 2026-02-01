@@ -1,12 +1,12 @@
 from setuptools import setup, find_packages
 
 
-VERSION = '1.0.9'
-DESCRIPTION = 'Beautifully simple animations'
-LONG_DESCRIPTION = 'A content-oriented package to create animations'
+VERSION = '0.0.1'
+DESCRIPTION = 'Efficient and scalable documentations'
+LONG_DESCRIPTION = 'A package to create scalable descriptions'
 
 setup(
-    name="lib-anim",
+    name="lib-handbook",
     version=VERSION,
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
@@ -15,14 +15,15 @@ setup(
     license='GNU GPL v3',
     packages=find_packages(),
     include_package_data=True,
-    install_requires=['numpy', 'matplotlib', 'pyqt6', 'pyqt6-3d', 'imageio[ffmpeg]'],
+    install_requires=['numpy'],
     keywords='conversion',
     classifiers= [
         "Development Status :: 4 - Beta",
-        "Intended Audience :: Science/Research",
+        "Intended Audience :: Developers",
         "Intended Audience :: Education",
+        "Intended Audience :: Science/Research",
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         "Programming Language :: Python :: 3",
-        "Topic :: Scientific/Engineering :: Visualization",
+        "Topic :: Documentation",
     ]
 )
