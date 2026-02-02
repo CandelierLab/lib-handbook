@@ -4,7 +4,7 @@ A test file for creating handbook pages
 
 import os
 
-from handbook import element, handbook
+import handbook as hb
 
 os.system('clear')
 
@@ -14,19 +14,14 @@ os.system('clear')
 
 # ══════════════════════════════════════════════════════════════════════════
 
-E = element()
-E.type = 'span'
-E.content = 'Some text...'
-E.parameters['id'] = 'my_span'
+H = hb.html(compact = False)
 
-F = element()
-F.type = 'div'
-F.content = E
-F.parameters['class'] = 'my_div'
+e1 = H.div('Some text...', {'id': 'my_div'})
+e2 = H.span('-----')
+e3 = H.div(e2)
 
+res = H.div(H.div(e1 + e2 + e3))
 
-print(F)
-
-# H = handbook()
+print(res)
 
 # ────────────
