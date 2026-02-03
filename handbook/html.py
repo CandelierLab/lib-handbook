@@ -2,6 +2,22 @@
 Html
 '''
 
+# Classes to import
+__all__ = ['html', 'comment', 'doctype', 
+           'a', 'abbr', 'address', 'area', 'article', 'aside', 'audio',
+           'b', 'base', 'bdi', 'bdo', 'blockquote', 'br', 'button',
+           'canvas', 'caption', 'cite', 'code', 'col', 'colgroup',
+           'data', 'datalist', 'dd', 'd_l', 'details', 'dfn', 'dialog', 'div', 'dl', 'dt',
+           'em', 'embed', 'fieldset', 'figcaption', 'figure', 'footer', 'form',
+           'h', 'head', 'header', 'hgroup', 'hr', 'i', 'iframe', 'img', 'input', 'ins', 
+           'kbd', 'label', 'legend', 'li', 'link', 'main', 'map', 'mark', 'menu', 'meta', 'meter',
+           'nav', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output', 
+           'p', 'param', 'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 
+           's', 'samp', 'script', 'search', 'section', 'select', 'small',
+           'source', 'span', 'strong', 'style', 'sub', 'summary', 'sup', 'svg', 
+           'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'time', 
+           'title', 'tr', 'track', 'u', 'ul', 'var', 'video', 'wbr']
+
 import os
 
 # ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
@@ -13,287 +29,747 @@ import os
 class element:
 
   # ────────────────────────────────────────────────────────────────────────
-  def __init__(self, type=None, content='', parameters=None, single=False, inline=False, compact=True, indent='  '):
+  def __init__(self, type=None, content=None, parameters=None, single=False, inline=False):
 
     # Tag type (div, span, img, etc.)
     self.type = type
+
+    # Single tag representation
     self.single = single
-    
-    # Semantics
-    self.content = content
-    self.parameters = {} if parameters is None else parameters
-    
+
     # Html display
-    self.compact = compact
-    self.indent = indent
-    self.inline = inline
+    self.inline = inline    
+
+    # Parameters and content 
+    self.parameters = {} if parameters is None else parameters
+    self.content = [] if content is None else (content if isinstance(content, list) else [content])
     
+  # ────────────────────────────────────────────────────────────────────────
+  def __call__(self):
+    return self.__str__()
+
   # ────────────────────────────────────────────────────────────────────────
   def __str__(self):
 
-    # Check
-    if self.type is None: return self.content
-
-    # ─── Start tag
-
-    # Initialization
-    s = '<' + self.type
-
-    # Parameters
-    for k, v in self.parameters.items():
-      s += f' {k}='
-      match v.__class__():
-        case str(): s += "'" + v + "'"
-        case _: s += str(v)
-
-    # End of starting tag
-    if self.single:
-      return s + '/>'
-    
-    else:
-      s += '>'
-
-    # Inline
-    if not self.compact and not self.inline: s += '\n' + self.indent
-      
-    # ─── Content
-
-    s += self.content if self.compact else self.content.replace('\n', '\n'+self.indent)
-    
-    # Inline
-    if not self.compact and not self.inline:
-      s = s.strip() + '\n'
-
-    # ─── Closing tag
-
-    s += '<' + self.type + '/>'
-    
-    # Inline
-    if not self.compact: s += '\n'
+    s = f'─── {self.type} ─────────────────────────────────\n'
+    s += self.str() #.strip()
 
     return s
 
   # ────────────────────────────────────────────────────────────────────────
+  def str(self, compact=False, indent='  '):
+
+    # Manage indent for simple containers
+    _indent_ = '' if self.type is None else indent
+
+    # Output string
+    s = ''
+
+    # ─── Start tag
+
+    if self.type is not None:
+
+      # Initialization
+      s += '<' + self.type
+
+      # Parameters
+      for k, v in self.parameters.items():
+
+        # Substitutes for the reserved keyword 'class'
+        if k.lower() in ['class', 'cls']: k = 'class'
+
+        if v is None:
+          s += ' ' + k
+        else:
+          s += f' {k}='
+          match v.__class__():
+            case str(): s += "'" + v + "'"
+            case _: s += str(v)
+      s += '>'
+
+      # End of starting tag
+      if self.single: return s  #if compact else s + '\n'
+
+      # Inline
+      if not compact and not self.inline: s += '\n'
+      
+    # ─── Content
+
+    if len(self.content):
+
+      for c in self.content:
+
+        if isinstance(c, str):
+          if compact or self.inline:
+            s += c.strip()
+          else:
+            s += _indent_ + c.strip() + '\n'
+
+        elif isinstance(c, element):      
+          if compact or self.inline:
+            s += c.str(compact, indent).strip()
+          else:
+            s += _indent_ + c.str(compact, indent).strip().replace('\n', '\n' + _indent_) + '\n'
+              
+    # ─── Closing tag
+
+    if self.type is not None:
+
+      s += '</' + self.type + '>'
+      
+      # Inline
+      if not compact and not self.inline: s += '\n'
+
+    return s
+
+  # ────────────────────────────────────────────────────────────────────────
+  def __lt__(self, elm):
+    self.content.append(elm)
+
+  # ────────────────────────────────────────────────────────────────────────
   def __add__(self, a):
 
-    match a.__class__():
-
-      case str():
-        r = element()
-        r.content = self.__str__() + a
-
-      case element():
-        r = element()
-        r.content = self.__str__() + a.__str__()
-
-      case _:
-        return NotImplemented
+    if isinstance(a, (str, element)):
+      r = element()
+      r < self
+      r < a
+      return r
+    else:
+      return NotImplemented
       
-    return r
-  
   # ────────────────────────────────────────────────────────────────────────
   def __radd__(self, a):
 
-    match a.__class__():
-
-      case str():
-        r = element()
-        r.content = a + self.__str__()
-
-      case _:
-        return NotImplemented
-      
-    return r
-  
-  # ────────────────────────────────────────────────────────────────────────
-  def __setattr__(self, name, value):
-
-    if name is 'content' and isinstance(value, element):
-      super(element, self).__setattr__(name, value.__str__())
+    if isinstance(a, (str, element)):
+      r = element()
+      r < a
+      r < self
+      return r
     else:
-      super(element, self).__setattr__(name, value)
+      return NotImplemented
 
 # ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
 # █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█
-# █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ HTML ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█
+# █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ HTML CLASS ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█
 # █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█
 # ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
 
-class html:
+class html(element):
 
   # ────────────────────────────────────────────────────────────────────────
   def __init__(self, compact=False):
 
-    # ─── Content
-
-    self.header = None
-    self.main = None
-    self.footer = None
+    super().__init__()
 
     # ─── Html display
 
     self.compact = compact
     self.indent = '  '
 
+    # ─── Content
+
+    self.head = head()
+    self.body = body()
+
+    self.built = None
+
+  # ────────────────────────────────────────────────────────────────────────
+  def __str__(self):
+    return self.build()
+
   # ────────────────────────────────────────────────────────────────────────
   def build(self):
 
-    pass
+    if self.built is None:
+      '''
+      The html document is built just once
+      '''
+
+      # Build html document
+      self < doctype('html')
+      H = element('html')
+      H < self.head
+      H < self.body
+      self < H
+
+      self.built = self.str(compact=self.compact, indent=self.indent).strip()
+
+    # Output string
+    return self.built
 
   # ────────────────────────────────────────────────────────────────────────
-  def save(self):
+  def save(self, filename):
 
-    pass
+    with open(filename, 'w') as f:
+      f.write(self.build())
 
-  # ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
-  # █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█
-  # █░░░░░░░░░░░░░░░░░░░░░░░░░░░ HTML ELEMENTS ░░░░░░░░░░░░░░░░░░░░░░░░░░░░█
-  # █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█
-  # ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+# ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+# █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█
+# █░░░░░░░░░░░░░░░░░░░░░░░░░░░ HTML5 ELEMENTS ░░░░░░░░░░░░░░░░░░░░░░░░░░░█
+# █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█
+# ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+
+# ────────────────────────────────────────────────────────────────────────
+class comment(element):
 
   # ────────────────────────────────────────────────────────────────────────
-  def div(self, content='', parameters={}):
-    return element('div', content, parameters, single=False, inline=False,
-                   compact=self.compact, indent=self.indent)
-  
+  def __init__(self, string:str):
+
+    super().__init__('comment')
+    self.string = string
+    
   # ────────────────────────────────────────────────────────────────────────
-  def span(self, content='', parameters={}, inline=True):
-    return element('span', content, parameters, single=False, inline=inline,
-                   compact=self.compact, indent=self.indent)
-  
-  '''
-  <!--...--> 	Defines a comment
-  <!DOCTYPE>  	Defines the document type
-  <a> 	Defines a hyperlink
-  <abbr> 	Defines an abbreviation or an acronym
-  <acronym> 	Not supported in HTML5. Use <abbr> instead.
-  Defines an acronym
-  <address> 	Defines contact information for the author/owner of a document
-  <applet> 	Not supported in HTML5. Use <embed> or <object> instead.
-  Defines an embedded applet
-  <area> 	Defines an area inside an image map
-  <article> 	Defines an article
-  <aside> 	Defines content aside from the page content
-  <audio> 	Defines embedded sound content
-  <b> 	Defines bold text
-  <base> 	Specifies the base URL/target for all relative URLs in a document
-  <basefont> 	Not supported in HTML5. Use CSS instead.
-  Specifies a default color, size, and font for all text in a document
-  <bdi> 	Isolates a part of text that might be formatted in a different direction from other text outside it
-  <bdo> 	Overrides the current text direction
-  <big> 	Not supported in HTML5. Use CSS instead.
-  Defines big text
-  <blockquote> 	Defines a section that is quoted from another source
-  <body> 	Defines the document's body
-  <br> 	Defines a single line break
-  <button> 	Defines a clickable button
-  <canvas> 	Used to draw graphics, on the fly, via scripting (usually JavaScript)
-  <caption> 	Defines a table caption
-  <center> 	Not supported in HTML5. Use CSS instead.
-  Defines centered text
-  <cite> 	Defines the title of a work
-  <code> 	Defines a piece of computer code
-  <col> 	Specifies column properties for each column within a <colgroup> element 
-  <colgroup> 	Specifies a group of one or more columns in a table for formatting
-  <data> 	Adds a machine-readable translation of a given content
-  <datalist> 	Specifies a list of pre-defined options for input controls
-  <dd> 	Defines a description/value of a term in a description list
-  <del> 	Defines text that has been deleted from a document
-  <details> 	Defines additional details that the user can view or hide
-  <dfn> 	Specifies a term that is going to be defined within the content
-  <dialog> 	Defines a dialog box or window
-  <dir> 	Not supported in HTML5. Use <ul> instead.
-  Defines a directory list
-  <div> 	Defines a section in a document
-  <dl> 	Defines a description list
-  <dt> 	Defines a term/name in a description list
-  <em> 	Defines emphasized text 
-  <embed> 	Defines a container for an external application
-  <fieldset> 	Groups related elements in a form
-  <figcaption> 	Defines a caption for a <figure> element
-  <figure> 	Specifies self-contained content
-  <font> 	Not supported in HTML5. Use CSS instead.
-  Defines font, color, and size for text
-  <footer> 	Defines a footer for a document or section
-  <form> 	Defines an HTML form for user input
-  <frame> 	Not supported in HTML5.
-  Defines a window (a frame) in a frameset
-  <frameset> 	Not supported in HTML5.
-  Defines a set of frames
-  <h1> to <h6> 	Defines HTML headings
-  <head> 	Contains metadata/information for the document
-  <header> 	Defines a header for a document or section
-  <hgroup> 	Defines a header and related content
-  <hr> 	Defines a thematic change in the content
-  <html> 	Defines the root of an HTML document
-  <i> 	Defines a part of text in an alternate voice or mood
-  <iframe> 	Defines an inline frame
-  <img> 	Defines an image
-  <input> 	Defines an input control
-  <ins> 	Defines a text that has been inserted into a document
-  <kbd> 	Defines keyboard input
-  <label> 	Defines a label for an <input> element
-  <legend> 	Defines a caption for a <fieldset> element
-  <li> 	Defines a list item
-  <link> 	Defines the relationship between a document and an external resource (most used to link to style sheets)
-  <main> 	Specifies the main content of a document
-  <map> 	Defines an image map
-  <mark> 	Defines marked/highlighted text
-  <menu> 	Defines an unordered list
-  <meta> 	Defines metadata about an HTML document
-  <meter> 	Defines a scalar measurement within a known range (a gauge)
-  <nav> 	Defines navigation links
-  <noframes> 	Not supported in HTML5.
-  Defines an alternate content for users that do not support frames
-  <noscript> 	Defines an alternate content for users that do not support client-side scripts
-  <object> 	Defines a container for an external application
-  <ol> 	Defines an ordered list
-  <optgroup> 	Defines a group of related options in a drop-down list
-  <option> 	Defines an option in a drop-down list
-  <output> 	Defines the result of a calculation
-  <p> 	Defines a paragraph
-  <param> 	Defines a parameter for an object
-  <picture> 	Defines a container for multiple image resources
-  <pre> 	Defines preformatted text
-  <progress> 	Represents the progress of a task
-  <q> 	Defines a short quotation
-  <rp> 	Defines what to show in browsers that do not support ruby annotations
-  <rt> 	Defines an explanation/pronunciation of characters (for East Asian typography)
-  <ruby> 	Defines a ruby annotation (for East Asian typography)
-  <s> 	Defines text that is no longer correct
-  <samp> 	Defines sample output from a computer program
-  <script> 	Defines a client-side script
-  <search> 	Defines a search section
-  <section> 	Defines a section in a document
-  <select> 	Defines a drop-down list
-  <small> 	Defines smaller text
-  <source> 	Defines multiple media resources for media elements (<video> and <audio>)
-  <span> 	Defines a section in a document
-  <strike> 	Not supported in HTML5. Use <del> or <s> instead.
-  Defines strikethrough text
-  <strong> 	Defines important text
-  <style> 	Defines style information for a document
-  <sub> 	Defines subscripted text
-  <summary> 	Defines a visible heading for a <details> element
-  <sup> 	Defines superscripted text
-  <svg> 	Defines a container for SVG graphics
-  <table> 	Defines a table
-  <tbody> 	Groups the body content in a table
-  <td> 	Defines a cell in a table
-  <template> 	Defines a container for content that should be hidden when the page loads
-  <textarea> 	Defines a multiline input control (text area)
-  <tfoot> 	Groups the footer content in a table
-  <th> 	Defines a header cell in a table
-  <thead> 	Groups the header content in a table
-  <time> 	Defines a specific time (or datetime)
-  <title> 	Defines a title for the document
-  <tr> 	Defines a row in a table
-  <track> 	Defines text tracks for media elements (<video> and <audio>)
-  <tt> 	Not supported in HTML5. Use CSS instead.
-  Defines teletype text
-  <u> 	Defines some text that is unarticulated and styled differently from normal text
-  <ul> 	Defines an unordered list
-  <var> 	Defines a variable
-  <video> 	Defines embedded video content
-  <wbr> 	Defines a possible line-break
-  '''
+  def str(self, compact=False, indent='  '):
+
+    # Comment
+    s = f'<!-- {self.string} -->'
+        
+    # Inline
+    if not compact: s += '\n'
+
+    return s
+
+# ────────────────────────────────────────────────────────────────────────
+class doctype(element):
+  def __init__(self, doctype):
+    super().__init__('!DOCTYPE', parameters={doctype:None}, single=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class a(element):
+  def __init__(self, href, *args, **kwargs):
+    super().__init__('a', content=list(args), parameters=dict({'href':href}, **kwargs), inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class abbr(element):
+  def __init__(self, title, *args):
+    super().__init__('abbr', content=list(args), parameters={'title':title}, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class address(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('address', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class area(element):
+  def __init__(self, **kwargs):
+    super().__init__('area', parameters=kwargs, single=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class article(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('article', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class aside(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('aside', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class audio(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('audio', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class b(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('b', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class base(element):
+  def __init__(self, **kwargs):
+    super().__init__('base', parameters=kwargs, single=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class bdi(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('bdi', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class bdo(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('bdo', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class blockquote(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('blockquote', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class body(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('body', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class br(element):
+  def __init__(self, **kwargs):
+    super().__init__('br', parameters=kwargs, single=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class button(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('button', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class canvas(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('canvas', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class caption(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('caption', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class cite(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('cite', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class code(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('code', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class col(element):
+  def __init__(self, **kwargs):
+    super().__init__('col', parameters=kwargs, single=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class colgroup(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('colgroup', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class data(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('data', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class datalist(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('datalist', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class dd(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('dd', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class d_l(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('del', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class details(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('details', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class dfn(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('dfn', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class dialog(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('dialog', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class div(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('div', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class dl(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('dl', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class dt(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('dt', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class em(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('em', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class embed(element):
+  def __init__(self, **kwargs):
+    super().__init__('embed', parameters=kwargs, single=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class fieldset(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('fieldset', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class figcaption(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('figcaption', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class figure(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('figure', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class footer(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('footer', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class form(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('form', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class inline(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('inline', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class h(element):
+  def __init__(self, level=1, *args, **kwargs):
+    super().__init__(f'h{level}', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class head(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('head', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class header(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('header', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class hgroup(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('hgroup', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class hr(element):
+  def __init__(self, **kwargs):
+    super().__init__('hr', parameters=kwargs, single=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class i(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('i', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class iframe(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('iframe', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class img(element):
+  def __init__(self, src, **kwargs):
+    super().__init__('img', parameters=dict({'src':src}, **kwargs), single=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class input(element):
+  def __init__(self, **kwargs):
+    super().__init__('input', parameters=kwargs, single=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class ins(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('ins', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class kbd(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('kbd', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class label(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('label', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class legend(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('legend', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class li(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('li', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class link(element):
+  def __init__(self, **kwargs):
+    super().__init__('link', parameters=kwargs, single=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class main(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('main', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class map(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('map', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class mark(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('mark', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class menu(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('menu', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class meta(element):
+  def __init__(self, **kwargs):
+    super().__init__('meta', parameters=kwargs, single=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class meter(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('meter', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class nav(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('nav', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class noscript(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('noscript', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class object(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('object', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class ol(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('ol', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class optgroup(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('optgroup', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class option(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('option', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class output(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('output', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class p(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('p', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class param(element):
+  def __init__(self, **kwargs):
+    super().__init__('param', parameters=kwargs, single=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class picture(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('picture', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class pre(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('pre', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class progress(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('progress', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class q(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('q', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class rp(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('rp', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class rt(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('rt', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class ruby(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('ruby', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class s(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('s', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class samp(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('samp', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class script(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('script', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class search(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('search', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class section(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('section', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class select(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('select', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class small(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('small', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class source(element):
+  def __init__(self, **kwargs):
+    super().__init__('source', parameters=kwargs, single=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class span(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('span', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class strong(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('strong', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class style(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('style', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class sub(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('sub', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class summary(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('summary', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class sup(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('sup', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class svg(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('svg', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class table(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('table', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class tbody(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('tbody', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class td(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('td', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class template(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('template', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class textarea(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('textarea', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class tfoot(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('tfoot', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class th(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('th', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class thead(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('thead', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class time(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('time', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class title(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('title', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class tr(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('tr', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class track(element):
+  def __init__(self, **kwargs):
+    super().__init__('track', parameters=kwargs, single=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class u(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('u', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class ul(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('ul', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class var(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('var', content=list(args), parameters=kwargs, inline=True)
+
+# ────────────────────────────────────────────────────────────────────────
+class video(element):
+  def __init__(self, *args, **kwargs):
+    super().__init__('video', content=list(args), parameters=kwargs)
+
+# ────────────────────────────────────────────────────────────────────────
+class wbr(element):
+  def __init__(self):
+    super().__init__('wbr', single=True)
