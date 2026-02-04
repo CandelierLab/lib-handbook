@@ -1,0 +1,11 @@
+/*  CSS STYLE
+/* ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  color: light-dark(#202020, #efefef);
+  background-color: light-dark(#efefef, #202020);
+}

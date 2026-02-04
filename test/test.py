@@ -5,7 +5,6 @@ A test file for creating handbook pages
 import os
 
 import handbook as hb
-from handbook.html import *
 
 os.system('clear')
 
@@ -15,15 +14,12 @@ os.system('clear')
 
 # ══════════════════════════════════════════════════════════════════════════
 
-H = html(compact = False)
-# H.body < comment('ok')
-H.body < div(abbr('link', b('ok'))) + br()
-# H._head < 'good'
-# H._head < 'fine'
+P = hb.page()
 
+P.body < 'ok'
 
-print(H)
-# H.save('test.html')
+print(P)
+P.save('test.html')
 
 # print(H.head)
 
